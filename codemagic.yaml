@@ -1,0 +1,107 @@
+workflows:
+
+  react-native-ios:
+    name: React Native iOS
+    max_build_duration: 120
+    instance_type: mac_mini
+    environment:
+      groups:
+        # - appstore_credentials # <-- (Includes APP_STORE_CONNECT_ISSUER_ID, APP_STORE_CONNECT_KEY_IDENTIFIER, APP_STORE_CONNECT_PRIVATE_KEY) - https://docs.codemagic.io/code-signing-yaml/signing-ios/
+        - certificate_credentials # <-- (Includes CERTIFICATE_PRIVATE_KEY)
+        # - other # <-- (Includes APP_STORE_APP_ID - Put the app id number here. This is found in App Store Connect > App > General > App Information)
+      # Add the group environment variables in Codemagic UI (either in Application/Team variables) - https://docs.codemagic.io/variables/environment-variable-groups/
+      vars:
+        XCODE_WORKSPACE: "SocialAuthXano.xcworkspace" # <-- Put the name of your Xcode workspace here
+        XCODE_SCHEME: "SocialAuthXano" # <-- Put the name of your Xcode scheme here
+        BUNDLE_ID: "com.test.socialauth" # <-- Put your Bundle Id here e.g com.domain.myapp
+        APP_STORE_CONNECT_PRIVATE_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgOlBGO3Zdb46NPPB4
+          DwwGiruzk3Fx1xDQEd513PhEqvCgCgYIKoZIzj0DAQehRANCAATb7HZkgCbB9PAZ
+          qnm3FS63NlcsccSwwnfZXW3FjXauQfzL3q4rAHP8ybm2dve53oeACfu27a055y/W
+          aoD8JQ5G
+          -----END PRIVATE KEY-----
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "28JN32Q6X9"
+        APP_STORE_CONNECT_ISSUER_ID: "69a6de90-bdc6-47e3-e053-5b8c7c11a4d1"
+        APP_STORE_APP_ID: "1635844353"
+      node: 16.13.1
+      xcode: 13.1
+      cocoapods: 1.11.2
+    scripts:
+      - name: Add Expo
+        script: |
+          yarn add "expo@44.0.6"
+      - name: Eject from Expo
+        script: |
+          yarn global add "expo-cli@^5.4.9"
+          type -a expo-cli
+          which expo-cli
+          which expo
+          expo eject
+      - name: Install yarn
+        script: |
+          yarn install
+      - name: Install CocoaPods dependencies
+        script: |
+          cd ios && pod install
+      - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
+        script: |
+          keychain initialize
+      - name: Fetch provisioning profiles and code signing certificates for Bundle ID with given identifier
+        script: |
+          # For information about Codemagic CLI commands visit: https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/app-store-connect/README.md
+          # For details about the --type paramater below - https://github.com/codemagic-ci-cd/cli-tools/blob/master/docs/app-store-connect/fetch-signing-files.md#--typeios_app_adhoc--ios_app_development--ios_app_inhouse--ios_app_store--mac_app_development--mac_app_direct--mac_app_store--mac_catalyst_app_development--mac_catalyst_app_direct--mac_catalyst_app_store--tvos_app_adhoc--tvos_app_development--tvos_app_inhouse--tvos_app_store
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose
+      - name: Use system default keychain
+        script: |
+          keychain add-certificates
+      - name: Increment build number
+        script: |
+          #!/bin/sh
+          set -e
+          set -x
+          cd $FCI_BUILD_DIR/ios
+          # agvtool new-version -all $(($BUILD_NUMBER + 1))
+          agvtool new-version -all $(($(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID") + 1))
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles --warn-only
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa --workspace "$FCI_BUILD_DIR/ios/$XCODE_WORKSPACE" --scheme "$XCODE_SCHEME"
+      - name: Build finished successfully
+        script: |
+          touch ~/SUCCESS
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      scripts:
+        - name: Report build status
+          script: |
+            if [ -a "~/SUCCESS" ] ; then
+              curl -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer draftbit-is-greatest-ever" -d '{"state":"Published","platform":"Ios","appId":41281,"userUuid":"dehr4cEp","firstName":"Rahul","lastName":"Shukla","email":"rshukla@draftbit.com"}' -X POST https://api.draftbit.com/report-build-status
+            else
+              curl -H "Accept: application/json" -H "Content-Type: application/json" -H "Authorization: Bearer draftbit-is-greatest-ever" -d '{"state":"Failure","platform":"Ios","appId":41281,"appName":"Social Auth Xano","userUuid":"dehr4cEp","userFirstName":"Rahul","userLastName":"Shukla","userEmail":"rshukla@draftbit.com"}' -X POST https://api.draftbit.com/report-build-status
+            fi
+      # See the following link for details about email publishing - https://docs.codemagic.io/publishing-yaml/distribution/#email
+      email:
+        recipients:
+          - "rshukla@draftbit.com"
+        notify:
+          success: true    # To receive a notification when a build succeeds
+          failure: true    # To receive a notification when a build fails
+      slack:
+      #   # See the following link about how to connect your Slack account - https://docs.codemagic.io/publishing-yaml/distribution/#slack
+        channel: '#customer-binary-requests'
+        notify_on_build_start: true   # To receive a notification when a build starts
+        notify:
+          success: true              # To receive a notification when a build succeeds
+          failure: true              # To receive a notification when a build fails
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY      # Contents of the API key, can also reference environment variable such as $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER    # Alphanumeric value that identifies the API key, can also reference environment variable such as $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID       # Alphanumeric value that identifies who created the API key, can also reference environment variable such as $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true        # Optional boolean, defaults to false. Whether or not to submit the uploaded build to TestFlight to automatically enroll your build to beta testers.
