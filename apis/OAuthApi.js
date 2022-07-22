@@ -10,9 +10,11 @@ import { useIsFocused } from '@react-navigation/native';
 import usePrevious from '../utils/usePrevious';
 import * as GlobalVariables from '../config/GlobalVariableContext';
 
-export const newEndpointGET = Constants =>
+export const newEndpointGET = (Constants, { link }) =>
   fetch(
-    `https://x8ki-letl-twmt.n7.xano.io/api:3gYiP53R/oauth/google/init?redirect_uri=https://auth.expo.io/@draftbitbuildservices/social-auth://HomeScreen/:code/:redirect_uri`,
+    `https://x8ki-letl-twmt.n7.xano.io/api:3gYiP53R/oauth/google/init?redirect_uri=${
+      link ?? ''
+    }`,
     {
       headers: {
         Accept: 'application/json',
@@ -29,12 +31,14 @@ export const newEndpointGET = Constants =>
     .then(res => res.json())
     .catch(() => {});
 
-export const useNewEndpointGET = () => {
+export const useNewEndpointGET = ({ link }) => {
   const Constants = GlobalVariables.useValues();
   const isFocused = useIsFocused();
 
   return useFetch(
-    `https://x8ki-letl-twmt.n7.xano.io/api:3gYiP53R/oauth/google/init?redirect_uri=https://auth.expo.io/@draftbitbuildservices/social-auth://HomeScreen/:code/:redirect_uri`,
+    `https://x8ki-letl-twmt.n7.xano.io/api:3gYiP53R/oauth/google/init?redirect_uri=${
+      link ?? ''
+    }`,
     {
       depends: [isFocused],
       headers: {
@@ -49,6 +53,7 @@ export const FetchNewEndpointGET = ({
   children,
   onData = () => {},
   refetchInterval,
+  link,
 }) => {
   const Constants = GlobalVariables.useValues();
   const isFocused = useIsFocused();
@@ -60,7 +65,9 @@ export const FetchNewEndpointGET = ({
     data,
     error,
   } = useFetch(
-    `https://x8ki-letl-twmt.n7.xano.io/api:3gYiP53R/oauth/google/init?redirect_uri=https://auth.expo.io/@draftbitbuildservices/social-auth://HomeScreen/:code/:redirect_uri`,
+    `https://x8ki-letl-twmt.n7.xano.io/api:3gYiP53R/oauth/google/init?redirect_uri=${
+      link ?? ''
+    }`,
     {
       depends: [isFocused],
       headers: {

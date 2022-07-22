@@ -1,7 +1,13 @@
 import React from 'react';
 import * as OAuthApi from '../apis/OAuthApi.js';
 import * as GlobalVariables from '../config/GlobalVariableContext';
-import { ButtonSolid, ScreenContainer, WebView, withTheme } from '@draftbit/ui';
+import {
+  ButtonOutline,
+  ButtonSolid,
+  ScreenContainer,
+  withTheme,
+} from '@draftbit/ui';
+import * as WebBrowser from 'expo-web-browser';
 import { StyleSheet } from 'react-native';
 
 const BlankScreen = props => {
@@ -17,35 +23,79 @@ const BlankScreen = props => {
       <ButtonSolid
         onPress={async () => {
           try {
-            const test = await OAuthApi.newEndpointGET(Constants);
-            setUrl(test?.authUrl);
-            console.log(JSON.stringify(test));
+            const test = await OAuthApi.newEndpointGET(Constants, {
+              link: 'https://auth.expo.io/@draftbitbuildservices/social-auth://HomeScreen/:code/:redirect_uri',
+            });
+
+            const valuejfjJTONV = test?.authUrl;
+            setUrl(valuejfjJTONV);
+            const abc = valuejfjJTONV;
+
+            await WebBrowser.openBrowserAsync(`${abc}`);
           } catch (err) {
             console.error(err);
           }
         }}
         style={[
-          styles.ButtonSolidMP,
+          styles.ButtonSolidkl,
           { backgroundColor: theme.colors.primary },
         ]}
-        title={'Get Started'}
+        title={'Deep link'}
       />
-      <WebView style={styles.WebViewin} source={{ uri: `${url}` }} />
+      <ButtonOutline
+        onPress={async () => {
+          try {
+            await OAuthApi.newEndpointGET(Constants, {
+              link: 'https://auth.expo.io/@draftbitbuildservices/social-auth/HomeScreen',
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+        style={styles.ButtonOutlineRp}
+        title={'Normal'}
+      />
+      <ButtonOutline
+        onPress={async () => {
+          try {
+            await OAuthApi.newEndpointGET(Constants, {
+              link: 'https://auth.expo.io/@draftbitbuildservices/social-auth/HomeScreen?code=code&redirect_uri=jajakjlaj',
+            });
+          } catch (err) {
+            console.error(err);
+          }
+        }}
+        style={styles.ButtonOutline_5B}
+        title={'Normal with Param'}
+      />
     </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  ButtonSolidMP: {
+  ButtonSolidkl: {
     borderRadius: 8,
     fontFamily: 'System',
     fontWeight: '700',
     textAlign: 'center',
   },
-  WebViewin: {
-    flex: 1,
-    width: '100%',
-    height: 600,
+  ButtonOutlineRp: {
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    fontFamily: 'System',
+    fontWeight: '700',
+    borderWidth: 1,
+    textAlign: 'center',
+    marginTop: 50,
+  },
+  ButtonOutline_5B: {
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    fontFamily: 'System',
+    fontWeight: '700',
+    borderWidth: 1,
+    textAlign: 'center',
+    marginTop: 50,
   },
 });
 
