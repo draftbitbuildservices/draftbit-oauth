@@ -56,7 +56,7 @@ function Placeholder() {
 export default function RootAppNavigator() {
   return (
     <NavigationContainer linking={LinkingConfiguration}>
-      <Stack.Navigator initialRouteName="BlankCopyScreen">
+      <Stack.Navigator initialRouteName="BlankScreen">
         <Stack.Screen
           name="HomeScreen"
           component={HomeScreen}
