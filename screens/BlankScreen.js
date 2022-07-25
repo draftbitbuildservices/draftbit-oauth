@@ -1,6 +1,8 @@
 import React from 'react';
 import * as OAuthApi from '../apis/OAuthApi.js';
+import * as CustomCode from '../components.js';
 import * as GlobalVariables from '../config/GlobalVariableContext';
+import * as Utils from '../utils';
 import {
   ButtonOutline,
   ButtonSolid,
@@ -45,9 +47,11 @@ const BlankScreen = props => {
       <ButtonOutline
         onPress={async () => {
           try {
-            await OAuthApi.newEndpointGET(Constants, {
+            const result = await OAuthApi.newEndpointGET(Constants, {
               link: 'https://auth.expo.io/@draftbitbuildservices/social-auth/HomeScreen',
             });
+            console.log(result);
+            await WebBrowser.openBrowserAsync(`${result?.authUrl}`);
           } catch (err) {
             console.error(err);
           }
@@ -58,9 +62,11 @@ const BlankScreen = props => {
       <ButtonOutline
         onPress={async () => {
           try {
-            await OAuthApi.newEndpointGET(Constants, {
+            const result = await OAuthApi.newEndpointGET(Constants, {
               link: 'https://auth.expo.io/@draftbitbuildservices/social-auth/HomeScreen?code=code&redirect_uri=jajakjlaj',
             });
+            console.log(result);
+            await WebBrowser.openBrowserAsync(`${result?.result.authUrl}`);
           } catch (err) {
             console.error(err);
           }
@@ -68,6 +74,9 @@ const BlankScreen = props => {
         style={styles.ButtonOutline_5B}
         title={'Normal with Param'}
       />
+      <Utils.CustomCodeErrorBoundary>
+        <CustomCode.App />
+      </Utils.CustomCodeErrorBoundary>
     </ScreenContainer>
   );
 };
